@@ -8,4 +8,6 @@ dependencies = [
     "matplotlib",
     "ipykernel",
     "numpy",
+    "ruff",
+    "scipy",
 ]
