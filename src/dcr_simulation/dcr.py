@@ -2,7 +2,7 @@
 Contains functions to calculate the DCR of a SPAD
 
 Features:
-- 
+- Plotting DCR versus SPDE for a range of independent variables
 """
 
 #Standard library imports
@@ -17,30 +17,14 @@ from scipy.optimize import fsolve
 # -----------------------------
 
 
-def N_DM1(tau_gate_pulse_width: float, I_DM_primary_dark_current: float):
-    """Calculate the primary dark carriers injected or generated in the multiplication region during a SPAD gate
-
-    Args:
-        tau_gate_pulse_width (float): Gate pulse width / Hz
-        I_DM_primary_dark_current (_type_): Primary dark current / A
-
-    Returns:
-        _type_: N_DM1
-    """
-    N_DM1 = I_DM_primary_dark_current * tau_gate_pulse_width / ELECTRON_CHARGE
-    return N_DM1
-
-    
-    
 class DCR_SPDE():
     """Plots DCR vs SPDE
 
-    __init__() initializes some default parameters to plot. The user can also input their own parameters via
+    __init__() initializes some default parameters to plot.
     """
     
     def __init__(self, params='default'):
-        """Initializes params. Should also be able to setup parameters from user input
-        """
+
 
         #Physical constants
         self.ELECTRONIC_CHARGE = 1.602e-19 # Electronic charge [C]
@@ -60,7 +44,6 @@ class DCR_SPDE():
             self.c= 0.01 # Trapping ratio [1%]
             
             # Effective free parameters -> Have physical origin but can be set by user
-            
             self.P_a = 0.1 # Avalanche probability (could also find from McIntyre model) -> Free parameter in Fig. 1
             self.I_DM = 1e-12 # Primary dark current -> Defaults to 1pA, can be set as series [A]
         
@@ -73,12 +56,13 @@ class DCR_SPDE():
             factor_Nt1, factor_Nt2 _type_: Fractions in Eq. 4 and 5
         """
         
-        self.tau_tr = self.M_0 / (2 * np.pi * self.GB) # Effective transit time of carriers 
+        self.tau_tr = self.M_0 / (2 * np.pi * self.GB) # Effective transit time of carriers. Just below Eq. 3 in paper.
         
         # Afterpulsing parameters
         self.N_tr = self.c * self.M_g / (1-self.c) # Average number of carriers trapped after a current pulse. Just above Eq. 4 in paper.
         
-        # Afterpulse exponential factors in Eq. 4 and 5.
+        # Afterpulse exponential factors in Eq. 4 and 5. These come from assuming exponential decay of trapped carrier population with characteristic time const. tau_d. 
+        # Tau_d will differ for III-V and Si APDs, look in literature for accurate value
         exp_tau_tau_d = np.exp(self.tau / self.tau_d)
         exp_DT_tau_d = np.exp(self.delta_T / self.tau_d)
         exp_tau_tr_tau_d = np.exp(self.tau_tr / self.tau_d)
@@ -87,7 +71,7 @@ class DCR_SPDE():
         factor_Nt2 = (exp_tau_tr_tau_d - 1) / (exp_DT_tau_d - 1) # Eq. (5) factor
         
         # Photons
-        self.P_ph = 1- np.exp(-self.N_0) # Probability that pulse contains at least one photon
+        self.P_ph = 1- np.exp(-self.N_0) # Probability that pulse contains at least one photon - comes from Poisson statistics of weak coherent pulse.
     
         return factor_Nt1, factor_Nt2
     
@@ -125,17 +109,18 @@ class DCR_SPDE():
 
             factor_Nt1, factor_Nt2 = self.compute_initial_params()
 
-            Pa_values = np.linspace(1e-4, 0.99, 2000)
+            Pa_values = np.linspace(1e-4, 0.99, 2000) # Iterate over range of P_a probabilities. Could also obtain from McIntyre model
 
-            N_DM1 = self.I_DM * self.tau / self.ELECTRONIC_CHARGE
-            N_DM2 = self.I_DM * self.M_0 * self.tau_tr / self.ELECTRONIC_CHARGE
+            N_DM1 = self.I_DM * self.tau / self.ELECTRONIC_CHARGE # Compute Eq. 2
+            N_DM2 = self.I_DM * self.M_0 * self.tau_tr / self.ELECTRONIC_CHARGE # Compute Eq. 3
 
             Pd_vals = []
             SPDE_vals = []
 
             for Pa in Pa_values:
 
-                def equation(Pd):
+                # Eq. 7 from paper — Pa passed as default arg to avoid closure over loop variable
+                def equation(Pd, Pa=Pa):
                     Nd = (N_DM1 + N_DM2
                         + Pd * self.N_tr * factor_Nt1
                         + Pd * self.N_tr * factor_Nt2)
@@ -144,7 +129,8 @@ class DCR_SPDE():
                 Pd_sol = fsolve(equation, x0=N_DM1 * Pa, full_output=False)[0]
                 Pd_sol = float(np.clip(Pd_sol, 0, 1))
 
-                def equation_on(Pon):
+                # Eq. 11 from paper — Pa passed as default arg to avoid closure over loop variable
+                def equation_on(Pon, Pa=Pa):
                     Nd_on = (N_DM1 + N_DM2
                             + Pon * self.N_tr * factor_Nt1
                             + Pon * self.N_tr * factor_Nt2
@@ -170,7 +156,19 @@ class DCR_SPDE():
 
 
     def plot(self, results, inVar=None, inVarName=None, savePath=None, upper_xlim: float=None) -> None:
+        """Plot DCR versus SPDE, iterating over a range of indepdenent variables
 
+        Args:
+            results (_type_): List of Pd_vals with SPDE_vals
+            inVar (_type_, optional): _description_. Array of indepdendent variables - free parameters to vary
+            inVarName (_type_, optional): _description_. Defaults to None.
+            savePath (_type_, optional): _description_. Defaults to None.
+            upper_xlim (float, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
+        
         fig, ax = plt.subplots(figsize=(7, 6))
 
         for i, (Pd_vals, SPDE_vals) in enumerate(results):
@@ -187,10 +185,15 @@ class DCR_SPDE():
         ax.set_xlabel('Single-photon detection efficiency (%)', fontsize=13)
         ax.set_ylabel('Dark Count Rate (Hz)', fontsize=13)
 
-        if upper_xlim:
-            ax.set_xlim(0,upper_xlim)
+        # ax.set_xscale('log')
 
-        ax.legend(fontsize=9)
+
+        if upper_xlim:
+            ax.set_xlim(-2,upper_xlim)
+        else:
+            ax.set_xlim(-2, 100)
+
+        ax.legend(fontsize=9, loc='lower right')
         ax.grid(True, which='both', alpha=0.3)
         plt.tight_layout()
 
@@ -198,6 +201,8 @@ class DCR_SPDE():
             plt.savefig(savePath, dpi=150)
 
         plt.show()
+
+        return fig, ax # Return for further modification
 
 
     def run_pipeline(self, inVar=None, inVarName=None, savePath=None, upper_xlim=None):

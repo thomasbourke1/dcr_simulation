@@ -5,6 +5,18 @@ A repository for reproducing simulation results from Kang et al., ‘Dark Count 
 ## Overview
 This is a model to calculate the dark count rate (DCR) and single-photon detection efficiency (SPDE) for a gated SPAD. In this operation, the SPAD is periodically biased above and below it's breakdown voltage $V_B$. The key free parameters of the model are the primary dark current $I_{DM}$ and the avalanche breakdown probability $P_a$, which can be calculated from the McIntyre model [2].
 
+## Method
+
+In Geiger mode, the SPAD is periodically biased above and below breakdown with a short voltage pulse. A detection event occurs when a carrier — either
+photon-generated or thermally generated — triggers an avalanche during the gate. This model assumes four independent sources fo such carriers:
+
+1. **Primary dark carriers** generated inside the multiplication region during the gate pulse
+2. **Pre-pulse dark carriers** generated before the pulse and amplified by the DC gain
+3. **Afterpulse carriers (type 1)** released from traps during the gate pulse
+4. **Afterpulse carriers (type 2)** released from traps before the gate pulse arrives
+
+Poissonian statistics are assumed for light and dark counts, and an exponential decay for afterpulsing with a characteristic decay constant $\tau_d$. This value is different for III-V and Si SPADs, and should be obtained from literature.
+
 ## Installation
 
 ```bash

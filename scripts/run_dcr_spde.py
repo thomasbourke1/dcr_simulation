@@ -9,4 +9,4 @@ sim = DCR_SPDE()
 sim.run_pipeline(savePath='results/figures/dcr_spde_M_0.png',
                  inVar=[30, 20, 10], # Plot multiple M_0 - average DC gain
                  inVarName='M_0',
-                 upper_xlim=20)
+                 upper_xlim=40)
