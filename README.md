@@ -15,7 +15,7 @@ photon-generated or thermally generated — triggers an avalanche during the gat
 3. **Afterpulse carriers (type 1)** released from traps during the gate pulse
 4. **Afterpulse carriers (type 2)** released from traps before the gate pulse arrives
 
-Poissonian statistics are assumed for light and dark counts, and an exponential decay for afterpulsing with a characteristic decay constant $\tau_d$. This value is different for III-V and Si SPADs, and should be obtained from literature.
+Poissonian statistics are assumed for light and dark counts, and an exponential decay for afterpulsing with a characteristic decay constant $\tau_d$. This value is different for III-V and Si SPADs, and should be obtained from literature. Equations for the DCR and SPDE are solved numerically using fsolve from scipy.optimize.
 
 ## Installation
 
