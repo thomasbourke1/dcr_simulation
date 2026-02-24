@@ -34,6 +34,8 @@ def N_DM1(tau_gate_pulse_width: float, I_DM_primary_dark_current: float):
     
 class DCR_SPDE:
     """Plots DCR vs SPDE
+
+    __init__() initializes some default parameters to plot. The user can also input their own parameters via
     """
     
     def __init__(self):
@@ -140,7 +142,7 @@ class DCR_SPDE:
             Pd_vals.append(Pd_sol*self.f) # times by f for DCR (currently dark count probability per pulse)
             SPDE_vals.append(SPQE * 100)   # convert to %
         
-            print(Pd_vals, SPDE_vals)
+            # print(Pd_vals, SPDE_vals)
         
         return Pd_vals, SPDE_vals
     
@@ -155,14 +157,14 @@ class DCR_SPDE:
         ax.semilogy(SPDE_vals, Pd_vals, lw=2, label=None)
         
         ax.set_xlabel('Single-photon detection efficiency (%)', fontsize=13)
-        ax.set_ylabel('Dark Count Rate', fontsize=13)
+        ax.set_ylabel('Dark Count Rate (Hz)', fontsize=13)
         # ax.set_title('Fig. 1 — Kang et al. APL 83, 2955 (2003)\n'
         #             r'$f$=100 kHz, $\tau$=2 ns, $\tau_d$=200 ns, '
         #             r'$c$=1%, $N_0$=0.3, $M_g$=10$^8$, GB=30 GHz',
         #             fontsize=10)
         ax.legend(fontsize=9)
-        ax.set_xlim([0, 40])
-        ax.set_ylim([1e-7, 1e0])
+        # ax.set_xlim([0, 40])
+        # ax.set_ylim([1e-7, 1e0])
         ax.grid(True, which='both', alpha=0.3)
 
         plt.tight_layout()
