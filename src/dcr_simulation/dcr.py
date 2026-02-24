@@ -119,7 +119,8 @@ class DCR_SPDE():
 
             for Pa in Pa_values:
 
-                def equation(Pd): # Eq. 7 from paper
+                # Eq. 7 from paper — Pa passed as default arg to avoid closure over loop variable
+                def equation(Pd, Pa=Pa):
                     Nd = (N_DM1 + N_DM2
                         + Pd * self.N_tr * factor_Nt1
                         + Pd * self.N_tr * factor_Nt2)
@@ -128,7 +129,8 @@ class DCR_SPDE():
                 Pd_sol = fsolve(equation, x0=N_DM1 * Pa, full_output=False)[0]
                 Pd_sol = float(np.clip(Pd_sol, 0, 1))
 
-                def equation_on(Pon): # Eq. 11 from paper
+                # Eq. 11 from paper — Pa passed as default arg to avoid closure over loop variable
+                def equation_on(Pon, Pa=Pa):
                     Nd_on = (N_DM1 + N_DM2
                             + Pon * self.N_tr * factor_Nt1
                             + Pon * self.N_tr * factor_Nt2
@@ -154,7 +156,19 @@ class DCR_SPDE():
 
 
     def plot(self, results, inVar=None, inVarName=None, savePath=None, upper_xlim: float=None) -> None:
+        """Plot DCR versus SPDE, iterating over a range of indepdenent variables
 
+        Args:
+            results (_type_): List of Pd_vals with SPDE_vals
+            inVar (_type_, optional): _description_. Array of indepdendent variables - free parameters to vary
+            inVarName (_type_, optional): _description_. Defaults to None.
+            savePath (_type_, optional): _description_. Defaults to None.
+            upper_xlim (float, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
+        
         fig, ax = plt.subplots(figsize=(7, 6))
 
         for i, (Pd_vals, SPDE_vals) in enumerate(results):
@@ -171,10 +185,15 @@ class DCR_SPDE():
         ax.set_xlabel('Single-photon detection efficiency (%)', fontsize=13)
         ax.set_ylabel('Dark Count Rate (Hz)', fontsize=13)
 
-        if upper_xlim:
-            ax.set_xlim(0,upper_xlim)
+        # ax.set_xscale('log')
 
-        ax.legend(fontsize=9)
+
+        if upper_xlim:
+            ax.set_xlim(-2,upper_xlim)
+        else:
+            ax.set_xlim(-2, 100)
+
+        ax.legend(fontsize=9, loc='lower right')
         ax.grid(True, which='both', alpha=0.3)
         plt.tight_layout()
 
@@ -182,6 +201,8 @@ class DCR_SPDE():
             plt.savefig(savePath, dpi=150)
 
         plt.show()
+
+        return fig, ax # Return for further modification
 
 
     def run_pipeline(self, inVar=None, inVarName=None, savePath=None, upper_xlim=None):
